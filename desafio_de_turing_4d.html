@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio de Turing 4D - Edição Cyberpack & Cidade Aberta</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 35px rgba(6, 182, 212, 0.5);
+        }
+
+        .glow-emerald {
+            box-shadow: 0 0 35px rgba(16, 185, 129, 0.5);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #0284c7;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col overflow-hidden bg-slate-950 text-slate-100">
+
+    <!-- WELCOME OVERLAY MODAL -->
+    <div id="modal-welcome" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-lg w-full p-8 rounded-3xl border border-sky-500/50 glow-cyan flex flex-col gap-6 relative overflow-hidden text-slate-100">
+            <div class="absolute -top-10 -right-10 w-40 h-40 bg-sky-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="flex items-center space-x-4">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-sky-500/30 shrink-0">
+                    <i class="fa-solid fa-person-running text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-extrabold bg-gradient-to-r from-sky-400 via-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">
+                        Desafio de Turing 4D
+                    </h2>
+                    <p class="text-xs text-slate-400 font-medium">Atmosfera Cyberpunk & Física Realista</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-sm text-slate-300 bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+                <p class="font-bold text-sky-400 flex items-center gap-2"><i class="fa-solid fa-gamepad"></i> Controles:</p>
+                <ul class="list-disc list-inside space-y-1.5 text-xs text-slate-400">
+                    <li><strong class="text-slate-200">WASD / Setas</strong>: Movimento fluido e ajustado do personagem.</li>
+                    <li><strong class="text-slate-200">Espaço (Segurar)</strong>: Ativar Jetpack Futurista (Gasta Energia).</li>
+                    <li><strong class="text-slate-200">Mouse (Clique e Arraste)</strong>: Câmera 360° em volta do Alan Turing.</li>
+                    <li><strong class="text-sky-400 font-bold">F</strong>: Interagir com Terminais e NPCs.</li>
+                </ul>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nome do Investigador:</label>
+                <input type="text" id="input-player-name" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-sky-400 focus:outline-none focus:border-sky-500 font-mono font-bold shadow-inner" value="Alan_Turing_4D">
+            </div>
+
+            <button id="btn-start-game" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 via-indigo-600 to-fuchsia-600 hover:brightness-110 font-bold text-sm text-white shadow-lg shadow-sky-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-play"></i> Entrar na Cidade Cyberpunk
+            </button>
+        </div>
+    </div>
+
+    <!-- TOP HUD NAVIGATION -->
+    <header class="glass-panel z-20 px-6 py-3 flex items-center justify-between border-b border-sky-900/50 shrink-0 text-slate-100">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-700 flex items-center justify-center shadow-md shadow-sky-500/30">
+                <i class="fa-solid fa-rocket text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-sm leading-tight text-sky-400 tracking-wide">
+                    DESAFIO DE TURING 4D
+                </h1>
+                <p class="text-[10px] text-slate-400 font-semibold">Investigador: <span id="hud-username" class="text-fuchsia-400 font-bold">Alan_Turing_4D</span></p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4 text-xs">
+            <!-- Barra de Vida -->
+            <div class="bg-slate-900/90 px-3 py-1.5 rounded-xl border border-rose-500/30 flex items-center gap-2">
+                <i class="fa-solid fa-heart text-rose-500 text-sm animate-pulse"></i>
+                <div class="w-24 bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+                    <div id="hud-health-bar" class="bg-gradient-to-r from-rose-600 to-rose-400 h-full w-full transition-all duration-300"></div>
+                </div>
+                <span id="hud-health-text" class="font-bold text-rose-400 font-mono text-[11px]">100%</span>
+            </div>
+
+            <!-- Barra de Jetpack -->
+            <div class="bg-slate-900/90 px-3 py-1.5 rounded-xl border border-sky-500/30 flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-amber-400 text-sm"></i>
+                <div class="w-24 bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+                    <div id="hud-jetpack-bar" class="bg-gradient-to-r from-amber-500 to-sky-400 h-full w-full transition-all duration-100"></div>
+                </div>
+                <span id="hud-jetpack-text" class="font-bold text-sky-400 font-mono text-[11px]">100%</span>
+            </div>
+
+            <div class="bg-slate-900/90 px-4 py-2 rounded-xl border border-slate-800 shadow-sm flex items-center gap-2">
+                <span class="text-slate-400">Pontos:</span>
+                <span id="hud-score" class="font-bold text-emerald-400 font-mono text-sm">0 pts</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button id="btn-sound" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 transition-colors border border-slate-800" title="Áudio">
+                <i class="fa-solid fa-volume-high text-sky-400"></i>
+            </button>
+            <button id="btn-restart" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold transition-all flex items-center gap-2 border border-slate-800">
+                <i class="fa-solid fa-rotate-right"></i> Reiniciar
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN GAME VIEWPORT -->
+    <div class="flex-1 relative flex overflow-hidden">
+        <canvas id="three-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+        <!-- FLOATING INTERACTION PROMPT -->
+        <div id="interaction-prompt" class="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 glass-panel px-6 py-3 rounded-2xl border border-sky-400 glow-cyan hidden flex items-center gap-3 animate-bounce">
+            <div class="w-9 h-9 rounded-xl bg-sky-500 text-white flex items-center justify-center font-bold text-base shadow-md">F</div>
+            <div>
+                <p id="prompt-text" class="text-xs font-bold text-slate-100">Pressione F para Interagir</p>
+                <p class="text-[10px] text-slate-400 font-medium">Executar Teste de Turing</p>
+            </div>
+        </div>
+
+        <!-- MISSION GOAL BANNER -->
+        <div class="absolute top-4 left-4 z-10 glass-panel px-5 py-3 rounded-2xl border border-sky-500/40 text-xs flex flex-col gap-1 max-w-xs shadow-md">
+            <div class="flex items-center gap-2 text-sky-400 font-bold">
+                <i class="fa-solid fa-compass"></i> Guia da Missão:
+            </div>
+            <p id="objective-desc" class="text-[11px] text-slate-300 leading-relaxed font-medium">Siga as trilhas luminosas para acessar o Supercomputador Turing da Fase 1.</p>
+        </div>
+    </div>
+
+    <!-- MISSION INTERACTIVE MODAL -->
+    <div id="mission-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel max-w-2xl w-full p-6 rounded-3xl border border-sky-500 glow-cyan flex flex-col gap-5 max-h-[90vh] overflow-y-auto text-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-3">
+                    <div id="mission-badge" class="w-10 h-10 rounded-xl bg-sky-500 text-white flex items-center justify-center font-bold shadow-md">1</div>
+                    <div>
+                        <h3 id="mission-title" class="font-bold text-base text-slate-100">Fase 1: O Teste de Turing Inicial</h3>
+                        <p class="text-xs text-slate-400">Analise os relatórios e decida quem é a Inteligência Artificial.</p>
+                    </div>
+                </div>
+                <button id="btn-close-modal" class="text-slate-400 hover:text-slate-100 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <!-- CHAT / DIALOGUE AREA -->
+            <div id="dialogue-area" class="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 flex flex-col gap-3 shadow-inner">
+            </div>
+
+            <!-- TELEMETRY PANEL -->
+            <div id="telemetry-panel" class="grid grid-cols-2 gap-4 bg-slate-900/90 p-4 rounded-2xl border border-slate-800 text-xs">
+                <div>
+                    <span class="text-slate-400 font-semibold block mb-1">Latência Sujeito Alpha:</span>
+                    <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                        <div class="bg-sky-500 h-full w-[98%]"></div>
+                    </div>
+                    <span class="text-[10px] text-sky-400 mt-1 block font-mono font-bold">0.001s (Resposta Algorítmica)</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 font-semibold block mb-1">Latência Sujeito Beta:</span>
+                    <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                        <div class="bg-fuchsia-500 h-full w-[60%]"></div>
+                    </div>
+                    <span class="text-[10px] text-fuchsia-400 mt-1 block font-mono font-bold">1.820s (Hesitação Emocional Humana)</span>
+                </div>
+            </div>
+
+            <!-- DECISION BUTTONS -->
+            <div id="decision-buttons" class="flex items-center gap-3 pt-2">
+                <button id="btn-choose-alpha" class="flex-1 py-3.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 font-bold text-xs text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-robot"></i> Sujeito Alpha é a IA
+                </button>
+                <button id="btn-choose-beta" class="flex-1 py-3.5 px-4 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 font-bold text-xs text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-user"></i> Sujeito Beta é a IA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl glass-panel border border-sky-400 text-xs text-slate-100 shadow-2xl opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-3">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-sky-400"></i>
+        <span id="toast-message" class="font-semibold">Notificação do Sistema</span>
+    </div>
+
+    <script>
+        // Global Game State
+        const gameState = {
+            playerName: "Alan_Turing_4D",
+            score: 0,
+            health: 100,
+            jetpackFuel: 100,
+            maxJetpackFuel: 100,
+            currentMission: 1, 
+            gameStarted: false,
+            soundEnabled: true,
+            isModalOpen: false,
+            alanTuringNPC: null
+        };
+
+        // Input Handling
+        const keys = {};
+        window.addEventListener('keydown', (e) => { keys[e.code] = true; });
+        window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+        // Synthesizer Audio Context
+        let audioCtx = null;
+        function playTone(freq, duration = 0.08) {
+            if (!gameState.soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // Three.js Scene Variables
+        let scene, camera, renderer;
+        let alanGroup, alanJoints = {}, jetpackFlames = [];
+        let terminalDesk, robotNPC, teleporterPad;
+        let pedestrianRobots = [];
+        let hazardZones = [];
+        let floorArrows = [];
+        let buildingColliders = [];
+        let clouds = [];
+
+        // Camera Orbit Variables
+        let cameraDistance = 8.5;
+        let cameraAngleX = 0;
+        let cameraAngleY = 0.3;
+        let mousePos = { x: 0, y: 0 };
+        let isMouseDown = false;
+
+        // Character Physics Setup (Corrigido para evitar fragilidade/travamentos)
+        const characterPhysics = {
+            speed: 0.22,
+            gravity: -0.015,
+            jetpackForce: 0.035,
+            velocity: new THREE.Vector3(),
+            isGrounded: true,
+            walkCycle: 0,
+            radius: 0.65
+        };
+
+        function createArticulatedAlanTuring() {
+            alanGroup = new THREE.Group();
+
+            const torsoGeo = new THREE.BoxGeometry(0.7, 0.9, 0.4);
+            const torsoMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.5, roughness: 0.3 });
+            const torso = new THREE.Mesh(torsoGeo, torsoMat);
+            torso.position.y = 1.3;
+            alanGroup.add(torso);
+
+            const coatGeo = new THREE.BoxGeometry(0.76, 1.0, 0.46);
+            const coatMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.2, roughness: 0.8 });
+            const coat = new THREE.Mesh(coatGeo, coatMat);
+            coat.position.set(0, 1.25, 0);
+            alanGroup.add(coat);
+
+            // JETPACK CYBERPACK NAS COSTAS
+            const jetpackGroup = new THREE.Group();
+            const packBody = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.25), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.1 }));
+            packBody.position.set(0, 1.35, -0.32);
+            jetpackGroup.add(packBody);
+
+            const thrusterGeo = new THREE.CylinderGeometry(0.08, 0.12, 0.35, 12);
+            const thrusterMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.8 });
+            const leftThruster = new THREE.Mesh(thrusterGeo, thrusterMat);
+            leftThruster.position.set(-0.18, 1.1, -0.32);
+            const rightThruster = new THREE.Mesh(thrusterGeo, thrusterMat);
+            rightThruster.position.set(0.18, 1.1, -0.32);
+            jetpackGroup.add(leftThruster);
+            jetpackGroup.add(rightThruster);
+
+            // Chamas do Jetpack (Efeito Emissivo)
+            const flameGeo = new THREE.ConeGeometry(0.1, 0.5, 8);
+            const flameMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 });
+            const leftFlame = new THREE.Mesh(flameGeo, flameMat);
+            leftFlame.position.set(-0.18, 0.8, -0.32);
+            leftFlame.rotation.x = Math.PI;
+            const rightFlame = new THREE.Mesh(flameGeo, flameMat);
+            rightFlame.position.set(0.18, 0.8, -0.32);
+            rightFlame.rotation.x = Math.PI;
+            
+            jetpackFlames = [leftFlame, rightFlame];
+            jetpackFlames.forEach(f => { f.visible = false; jetpackGroup.add(f); });
+
+            alanGroup.add(jetpackGroup);
+
+            const headGeo = new THREE.SphereGeometry(0.28, 16, 16);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.95;
+
+            const hairGeo = new THREE.SphereGeometry(0.29, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.9 });
+            const hair = new THREE.Mesh(hairGeo, hairMat);
+            hair.position.y = 1.98;
+            alanGroup.add(hair);
+            alanGroup.add(head);
+
+            const limbMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
+
+            const leftShoulder = new THREE.Group();
+            leftShoulder.position.set(-0.45, 1.6, 0);
+            const leftArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5), limbMat);
+            leftArmMesh.position.y = -0.25;
+            leftShoulder.add(leftArmMesh);
+
+            const leftElbow = new THREE.Group();
+            leftElbow.position.y = -0.5;
+            const leftForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.45), limbMat);
+            leftForearmMesh.position.y = -0.225;
+            leftElbow.add(leftForearmMesh);
+            leftShoulder.add(leftElbow);
+            alanGroup.add(leftShoulder);
+
+            const rightShoulder = new THREE.Group();
+            rightShoulder.position.set(0.45, 1.6, 0);
+            const rightArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.5), limbMat);
+            rightArmMesh.position.y = -0.25;
+            rightShoulder.add(rightArmMesh);
+
+            const rightElbow = new THREE.Group();
+            rightElbow.position.y = -0.5;
+            const rightForearmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.45), limbMat);
+            rightForearmMesh.position.y = -0.225;
+            rightElbow.add(rightForearmMesh);
+            rightShoulder.add(rightElbow);
+            alanGroup.add(rightShoulder);
+
+            const leftHip = new THREE.Group();
+            leftHip.position.set(-0.2, 0.85, 0);
+            const leftThighMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.11, 0.5), limbMat);
+            leftThighMesh.position.y = -0.25;
+            leftHip.add(leftThighMesh);
+
+            const leftKnee = new THREE.Group();
+            leftKnee.position.y = -0.5;
+            const leftShinMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.45), limbMat);
+            leftShinMesh.position.y = -0.225;
+            leftKnee.add(leftShinMesh);
+            leftHip.add(leftKnee);
+            alanGroup.add(leftHip);
+
+            const rightHip = new THREE.Group();
+            rightHip.position.set(0.2, 0.85, 0);
+            const rightThighMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.11, 0.5), limbMat);
+            rightThighMesh.position.y = -0.25;
+            rightHip.add(rightThighMesh);
+
+            const rightKnee = new THREE.Group();
+            rightKnee.position.y = -0.5;
+            const rightShinMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.45), limbMat);
+            rightShinMesh.position.y = -0.225;
+            rightKnee.add(rightShinMesh);
+            rightHip.add(rightKnee);
+            alanGroup.add(rightHip);
+
+            alanJoints = {
+                torso: torso,
+                leftArm: { shoulder: leftShoulder, elbow: leftElbow },
+                rightArm: { shoulder: rightShoulder, elbow: rightElbow },
+                leftLeg: { hip: leftHip, knee: leftKnee },
+                rightLeg: { hip: rightHip, knee: rightKnee }
+            };
+
+            alanGroup.position.set(0, 0, 15);
+            scene.add(alanGroup);
+        }
+
+        function createCyberSkyAndSun() {
+            // Sol Radiante Cyberpunk Ensolarado
+            const sunGroup = new THREE.Group();
+            const sunGeo = new THREE.SphereGeometry(22, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xfbcfe8 });
+            const sun = new THREE.Mesh(sunGeo, sunMat);
+            sunGroup.add(sun);
+
+            // Anéis de Luz do Sol
+            const ringGeo = new THREE.RingGeometry(24, 28, 32);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            sunGroup.add(ring);
+
+            sunGroup.position.set(50, 65, -140);
+            scene.add(sunGroup);
+
+            // Nuvens Volumétricas e Dinâmicas de Dia Ensolarado Tech
+            clouds = [];
+            for (let i = 0; i < 22; i++) {
+                const cloudGroup = new THREE.Group();
+                const cloudMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xffffff, 
+                    transparent: true, 
+                    opacity: 0.75, 
+                    roughness: 0.1,
+                    emissive: 0x38bdf8,
+                    emissiveIntensity: 0.15
+                });
+
+                const numPuffs = 4 + Math.floor(Math.random() * 4);
+                for (let j = 0; j < numPuffs; j++) {
+                    const puff = new THREE.Mesh(new THREE.SphereGeometry(4 + Math.random() * 5, 12, 12), cloudMat);
+                    puff.position.set(j * 4 - 5, Math.random() * 2, Math.random() * 3);
+                    cloudGroup.add(puff);
+                }
+
+                cloudGroup.position.set((Math.random() - 0.5) * 260, 40 + Math.random() * 25, (Math.random() - 0.5) * 260);
+                cloudGroup.userData = { speed: 0.04 + Math.random() * 0.05 };
+                scene.add(cloudGroup);
+                clouds.push(cloudGroup);
+            }
+        }
+
+        function buildAestheticCyberCity() {
+            const floorGeo = new THREE.PlaneGeometry(300, 300);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.5, metalness: 0.8 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            const gridHelper = new THREE.GridHelper(300, 60, 0x38bdf8, 0x0284c7);
+            gridHelper.position.y = 0.01;
+            scene.add(gridHelper);
+
+            buildingColliders = [];
+            hazardZones = [];
+            const buildingColors = [0x0f172a, 0x1e1b4b, 0x0284c7, 0x0369a1, 0x1e293b];
+
+            for (let x = -100; x <= 100; x += 30) {
+                for (let z = -100; z <= 100; z += 30) {
+                    if (Math.abs(x) < 20 && Math.abs(z) < 20) continue;
+
+                    let h = 18 + Math.random() * 28;
+                    if (x === -30 && z === -20) h = 28;
+
+                    const bGeo = new THREE.BoxGeometry(18, h, 18);
+                    const bMat = new THREE.MeshStandardMaterial({
+                        color: buildingColors[Math.floor(Math.random() * buildingColors.length)],
+                        metalness: 0.7,
+                        roughness: 0.3
+                    });
+
+                    const building = new THREE.Mesh(bGeo, bMat);
+                    building.position.set(x, h / 2, z);
+                    scene.add(building);
+
+                    const box3 = new THREE.Box3().setFromObject(building);
+                    buildingColliders.push(box3);
+
+                    // Neon Strips Iluminadas
+                    const stripeGeo = new THREE.BoxGeometry(18.2, 0.5, 18.2);
+                    const stripeMat = new THREE.MeshBasicMaterial({ color: (Math.random() > 0.5) ? 0x38bdf8 : 0xec4899 });
+                    const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+                    stripe.position.set(x, h * 0.7, z);
+                    scene.add(stripe);
+                }
+            }
+
+            // Zonas de Lasers Perigosos (Afeta a Vida do Jogador)
+            for (let i = 0; i < 4; i++) {
+                const laserGeo = new THREE.CylinderGeometry(0.15, 0.15, 12, 8);
+                const laserMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+                const laser = new THREE.Mesh(laserGeo, laserMat);
+                laser.rotation.z = Math.PI / 2;
+
+                const pos = [
+                    { x: 0, y: 1.2, z: 0 },
+                    { x: -15, y: 1.2, z: -10 },
+                    { x: 15, y: 1.2, z: -25 },
+                    { x: -10, y: 1.2, z: 10 }
+                ][i];
+
+                laser.position.set(pos.x, pos.y, pos.z);
+                scene.add(laser);
+                hazardZones.push(laser);
+            }
+
+            createCivilizedPedestrianRobots();
+        }
+
+        function createWorldElements() {
+            terminalDesk = new THREE.Group();
+            const deskBase = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 0.8, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 }));
+            deskBase.position.y = 0.4;
+            terminalDesk.add(deskBase);
+
+            const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.0), new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.8 }));
+            screen.position.set(0, 1.4, 0);
+            terminalDesk.add(screen);
+
+            terminalDesk.position.set(0, 0, -20);
+            scene.add(terminalDesk);
+
+            robotNPC = new THREE.Group();
+            const rBody = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.1 }));
+            rBody.position.y = 1.6;
+            robotNPC.add(rBody);
+
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.08, 16, 32), new THREE.MeshBasicMaterial({ color: 0xec4899 }));
+            ring.name = "robotOrbitalRing";
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 1.6;
+            robotNPC.add(ring);
+
+            const redArrowGroup = new THREE.Group();
+            redArrowGroup.name = "redArrow";
+            const redArr = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.4, 4), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+            redArr.rotation.x = Math.PI;
+            redArr.position.y = 3.8;
+            redArrowGroup.add(redArr);
+            robotNPC.add(redArrowGroup);
+
+            robotNPC.position.set(12, 0, -36);
+            scene.add(robotNPC);
+
+            // Elevador / Teleportador Holográfico para o Prédio da Fase 3
+            teleporterPad = new THREE.Group();
+            const padBase = new THREE.Mesh(new THREE.CylinderGeometry(2, 2.2, 0.3, 32), new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x38bdf8, emissiveIntensity: 0.6 }));
+            padBase.position.y = 0.15;
+            teleporterPad.add(padBase);
+            const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, 28, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.25, side: THREE.DoubleSide }));
+            beam.position.y = 14;
+            teleporterPad.add(beam);
+            teleporterPad.position.set(-30, 0, -20);
+            scene.add(teleporterPad);
+
+            const alanNPCGroup = new THREE.Group();
+
+            const pad = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.8, 0.3, 32), new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x0284c7, emissiveIntensity: 0.4 }));
+            pad.position.y = 0.15;
+            alanNPCGroup.add(pad);
+
+            const beacon = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.0, 16, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.15, side: THREE.DoubleSide }));
+            beacon.position.y = 8;
+            alanNPCGroup.add(beacon);
+
+            const alanNPCBody = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.7, 16), new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
+            alanNPCBody.position.y = 1.15;
+
+            const coatNPC = new THREE.Mesh(new THREE.BoxGeometry(0.76, 1.0, 0.46), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+            coatNPC.position.set(0, 1.15, 0);
+            alanNPCGroup.add(coatNPC);
+
+            const alanNPCHead = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+            alanNPCHead.position.y = 2.1;
+
+            const hairNPC = new THREE.Mesh(new THREE.SphereGeometry(0.31, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x09090b }));
+            hairNPC.position.y = 2.13;
+            alanNPCGroup.add(hairNPC);
+
+            alanNPCGroup.add(alanNPCBody);
+            alanNPCGroup.add(alanNPCHead);
+            
+            alanNPCGroup.position.set(-30, 28.0, -20);
+            scene.add(alanNPCGroup);
+            gameState.alanTuringNPC = alanNPCGroup;
+
+            floorArrows = [];
+            const arrowColors = [0x8b5cf6, 0x1e40af, 0x0284c7, 0x06b6d4];
+
+            for (let i = 0; i < 6; i++) {
+                const arrowGroup = new THREE.Group();
+                const armMat = new THREE.MeshBasicMaterial({ color: arrowColors[i % arrowColors.length] });
+
+                const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 1.2), armMat);
+                arm1.position.set(-0.4, 0.02, 0);
+                arm1.rotation.y = Math.PI / 12;
+                arrowGroup.add(arm1);
+
+                const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 1.2), armMat);
+                arm2.position.set(0.4, 0.02, 0);
+                arm2.rotation.y = -Math.PI / 12;
+                arrowGroup.add(arm2);
+
+                scene.add(arrowGroup);
+                floorArrows.push(arrowGroup);
+            }
+        }
+
+        function createCivilizedPedestrianRobots() {
+            pedestrianRobots = [];
+            const botColors = [0x10b981, 0x0284c7, 0x8b5cf6, 0xef4444];
+
+            const routes = [
+                [ {x: 8, z: 8}, {x: 18, z: 8}, {x: 18, z: 18}, {x: 8, z: 18} ],
+                [ {x: -8, z: 8}, {x: -8, z: 18}, {x: -18, z: 18}, {x: -18, z: 8} ],
+                [ {x: 8, z: -8}, {x: 8, z: -18}, {x: 18, z: -18}, {x: 18, z: -8} ],
+                [ {x: -8, z: -8}, {x: -18, z: -8}, {x: -18, z: -18}, {x: -8, z: -18} ]
+            ];
+
+            routes.forEach((route, idx) => {
+                const pBot = new THREE.Group();
+
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.2, 16), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.2 }));
+                body.position.y = 0.9;
+                pBot.add(body);
+
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9 }));
+                head.position.y = 1.6;
+
+                const visor = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.2), new THREE.MeshBasicMaterial({ color: botColors[idx % botColors.length] }));
+                visor.position.set(0, 0, 0.15);
+                head.add(visor);
+                pBot.add(head);
+
+                pBot.position.set(route[0].x, 0, route[0].z);
+                pBot.userData = { route: route, targetIdx: 1, speed: 0.05 };
+
+                scene.add(pBot);
+                pedestrianRobots.push(pBot);
+            });
+        }
+
+        function initThree() {
+            const canvas = document.getElementById('three-canvas');
+            scene = new THREE.Scene();
+            // Céu com Clima Ensolarado Vibrante Cyberpunk
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.FogExp2(0x1e1b4b, 0.003);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // Luz Solar Principal e Ambiente
+            const ambient = new THREE.AmbientLight(0xbae6fd, 0.9);
+            scene.add(ambient);
+
+            const sunLight = new THREE.DirectionalLight(0xffedd5, 1.4);
+            sunLight.position.set(50, 80, -100);
+            scene.add(sunLight);
+
+            const cyanRim = new THREE.DirectionalLight(0x38bdf8, 0.7);
+            cyanRim.position.set(-50, 30, 50);
+            scene.add(cyanRim);
+
+            createCyberSkyAndSun();
+            buildAestheticCyberCity();
+            createArticulatedAlanTuring();
+            createWorldElements();
+
+            canvas.addEventListener('mousedown', (e) => {
+                if (gameState.isModalOpen) return;
+                isMouseDown = true;
+                mousePos = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mouseup', () => { isMouseDown = false; });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isMouseDown || gameState.isModalOpen) return;
+                const dx = e.clientX - mousePos.x;
+                const dy = e.clientY - mousePos.y;
+                
+                cameraAngleX -= dx * 0.006;
+                cameraAngleY += dy * 0.004;
+                cameraAngleY = Math.max(0.08, Math.min(1.4, cameraAngleY));
+                
+                mousePos = { x: e.clientX, y: e.clientY };
+            });
+
+            canvas.addEventListener('wheel', (e) => {
+                if (gameState.isModalOpen) return;
+                cameraDistance += e.deltaY * 0.005;
+                cameraDistance = Math.max(4.0, Math.min(18.0, cameraDistance));
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function updateCharacterPhysicsAndAnimation() {
+            let moving = false;
+
+            const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraAngleX);
+            const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraAngleX);
+            forward.y = 0; right.y = 0;
+            forward.normalize(); right.normalize();
+
+            const moveDir = new THREE.Vector3();
+
+            if (keys['KeyW'] || keys['ArrowUp']) moveDir.add(forward);
+            if (keys['KeyS'] || keys['ArrowDown']) moveDir.sub(forward);
+            if (keys['KeyA'] || keys['ArrowLeft']) moveDir.sub(right);
+            if (keys['KeyD'] || keys['ArrowRight']) moveDir.add(right);
+
+            if (moveDir.lengthSq() > 0) {
+                moveDir.normalize();
+                moving = true;
+            }
+
+            // Tentativa de Nova Posição com Deslocamento Fluido
+            const deltaPos = moveDir.clone().multiplyScalar(characterPhysics.speed);
+            const targetX = alanGroup.position.x + deltaPos.x;
+            const targetZ = alanGroup.position.z + deltaPos.z;
+
+            // Sistema de Colisão Robusto (Suave e Sem Desperdício)
+            let canMoveX = true;
+            let canMoveZ = true;
+
+            const boundingRadius = characterPhysics.radius;
+
+            for (let box of buildingColliders) {
+                if (alanGroup.position.y < box.max.y - 0.2) {
+                    if (targetX + boundingRadius > box.min.x && targetX - boundingRadius < box.max.x &&
+                        alanGroup.position.z + boundingRadius > box.min.z && alanGroup.position.z - boundingRadius < box.max.z) {
+                        canMoveX = false;
+                    }
+                    if (alanGroup.position.x + boundingRadius > box.min.x && alanGroup.position.x - boundingRadius < box.max.x &&
+                        targetZ + boundingRadius > box.min.z && targetZ - boundingRadius < box.max.z) {
+                        canMoveZ = false;
+                    }
+                }
+            }
+
+            if (canMoveX) alanGroup.position.x = targetX;
+            if (canMoveZ) alanGroup.position.z = targetZ;
+
+            if (moving) {
+                const targetRotation = Math.atan2(moveDir.x, moveDir.z);
+                alanGroup.rotation.y = targetRotation;
+                characterPhysics.walkCycle += 0.2;
+            } else {
+                characterPhysics.walkCycle *= 0.8;
+            }
+
+            // CONTROLE DO JETPACK (Segurar Espaço para Voar)
+            let isUsingJetpack = false;
+            if (keys['Space'] && gameState.jetpackFuel > 0) {
+                characterPhysics.velocity.y += characterPhysics.jetpackForce;
+                gameState.jetpackFuel = Math.max(0, gameState.jetpackFuel - 0.7);
+                characterPhysics.isGrounded = false;
+                isUsingJetpack = true;
+                playTone(280 + Math.random() * 50, 0.05);
+            } else if (characterPhysics.isGrounded && gameState.jetpackFuel < gameState.maxJetpackFuel) {
+                // Recarga Gradual de Jetpack no Chão
+                gameState.jetpackFuel = Math.min(gameState.maxJetpackFuel, gameState.jetpackFuel + 0.5);
+            }
+
+            // Atualiza Medidor HUD do Jetpack
+            document.getElementById('hud-jetpack-bar').style.width = `${gameState.jetpackFuel}%`;
+            document.getElementById('hud-jetpack-text').innerText = `${Math.round(gameState.jetpackFuel)}%`;
+
+            // Visibilidade das Chamas do Jetpack
+            jetpackFlames.forEach(f => f.visible = isUsingJetpack);
+
+            // Gravidade e Plataformas
+            if (!characterPhysics.isGrounded || !isUsingJetpack) {
+                characterPhysics.velocity.y += characterPhysics.gravity;
+                alanGroup.position.y += characterPhysics.velocity.y;
+
+                if (alanGroup.position.y <= 0) {
+                    alanGroup.position.y = 0;
+                    characterPhysics.velocity.y = 0;
+                    characterPhysics.isGrounded = true;
+                }
+
+                // Topo do Prédio da Fase 3
+                if (alanGroup.position.x <= -21 && alanGroup.position.x >= -39 &&
+                    alanGroup.position.z <= -11 && alanGroup.position.z >= -29) {
+                    if (alanGroup.position.y <= 28.3 && alanGroup.position.y >= 26.0 && characterPhysics.velocity.y <= 0) {
+                        alanGroup.position.y = 28.0;
+                        characterPhysics.velocity.y = 0;
+                        characterPhysics.isGrounded = true;
+                    }
+                }
+            }
+
+            // DANO POR LASERS / PERIGOS (Sistema de Vida)
+            hazardZones.forEach(laser => {
+                if (alanGroup.position.distanceTo(laser.position) < 1.8) {
+                    gameState.health = Math.max(0, gameState.health - 0.5);
+                    document.getElementById('hud-health-bar').style.width = `${gameState.health}%`;
+                    document.getElementById('hud-health-text').innerText = `${Math.round(gameState.health)}%`;
+                    
+                    if (gameState.health <= 0) {
+                        showToast("Energia zerada! Reiniciando posição...", "error");
+                        gameState.health = 100;
+                        alanGroup.position.set(0, 0, 15);
+                    }
+                }
+            });
+
+            // Animação Articulada dos Membros
+            const cycle = Math.sin(characterPhysics.walkCycle);
+            const armAngle = cycle * 0.6;
+            const legAngle = cycle * 0.7;
+
+            alanJoints.leftArm.shoulder.rotation.x = armAngle;
+            alanJoints.rightArm.shoulder.rotation.x = -armAngle;
+            alanJoints.leftArm.elbow.rotation.x = Math.max(0, -armAngle * 0.5);
+            alanJoints.rightArm.elbow.rotation.x = Math.max(0, armAngle * 0.5);
+
+            alanJoints.leftLeg.hip.rotation.x = -legAngle;
+            alanJoints.rightLeg.hip.rotation.x = legAngle;
+            alanJoints.leftLeg.knee.rotation.x = Math.max(0, legAngle * 0.8);
+            alanJoints.rightLeg.knee.rotation.x = Math.max(0, -legAngle * 0.8);
+
+            alanJoints.torso.position.y = 1.3 + Math.abs(Math.sin(characterPhysics.walkCycle * 2)) * 0.08;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (gameState.gameStarted && !gameState.isModalOpen) {
+                updateCharacterPhysicsAndAnimation();
+
+                const horizontalDist = cameraDistance * Math.cos(cameraAngleY * 0.5);
+                const verticalDist = cameraDistance * Math.sin(cameraAngleY);
+
+                const camOffset = new THREE.Vector3(
+                    Math.sin(cameraAngleX) * horizontalDist,
+                    Math.max(1.2, verticalDist),
+                    Math.cos(cameraAngleX) * horizontalDist
+                );
+
+                camera.position.copy(alanGroup.position).add(camOffset);
+                camera.lookAt(alanGroup.position.clone().add(new THREE.Vector3(0, 1.4, 0)));
+
+                // Animação Dinâmica das Nuvens do Céu
+                clouds.forEach(cloud => {
+                    cloud.position.x += cloud.userData.speed;
+                    if (cloud.position.x > 140) cloud.position.x = -140;
+                });
+
+                pedestrianRobots.forEach(pBot => {
+                    const route = pBot.userData.route;
+                    const target = route[pBot.userData.targetIdx];
+                    const pos = pBot.position;
+
+                    const dir = new THREE.Vector3(target.x - pos.x, 0, target.z - pos.z);
+                    if (dir.length() < 0.2) {
+                        pBot.userData.targetIdx = (pBot.userData.targetIdx + 1) % route.length;
+                    } else {
+                        dir.normalize();
+                        pBot.position.x += dir.x * pBot.userData.speed;
+                        pBot.position.z += dir.z * pBot.userData.speed;
+                        pBot.rotation.y = Math.atan2(dir.x, dir.z);
+                    }
+                });
+
+                if (robotNPC) {
+                    robotNPC.position.y = Math.sin(Date.now() * 0.003) * 0.4;
+                    const redArr = robotNPC.getObjectByName("redArrow");
+                    if (redArr) redArr.rotation.y += 0.05;
+                    const oRing = robotNPC.getObjectByName("robotOrbitalRing");
+                    if (oRing) oRing.rotation.z += 0.03;
+                }
+
+                let targetPos = terminalDesk.position;
+                if (gameState.currentMission === 2) targetPos = robotNPC.position;
+                else if (gameState.currentMission === 3) {
+                    targetPos = new THREE.Vector3(-30, 0, -20);
+                }
+
+                floorArrows.forEach((arr, idx) => {
+                    const prog = (idx + 1) / (floorArrows.length + 1);
+                    arr.position.x = alanGroup.position.x + (targetPos.x - alanGroup.position.x) * prog;
+                    arr.position.z = alanGroup.position.z + (targetPos.z - alanGroup.position.z) * prog;
+                    arr.lookAt(targetPos.x, 0.05, targetPos.z);
+                });
+
+                const distTerminal = alanGroup.position.distanceTo(terminalDesk.position);
+                const distRobot = alanGroup.position.distanceTo(robotNPC.position);
+                const distTeleport = alanGroup.position.distanceTo(teleporterPad.position);
+                const distAlanNPC = gameState.alanTuringNPC ? alanGroup.position.distanceTo(gameState.alanTuringNPC.position) : 999;
+
+                const promptElem = document.getElementById('interaction-prompt');
+                const promptText = document.getElementById('prompt-text');
+
+                if (gameState.currentMission === 1 && distTerminal < 3.8) {
+                    promptElem.classList.remove('hidden');
+                    promptText.innerText = "Pressione F para Acessar o Terminal Holográfico";
+                    if (keys['KeyF']) openMissionModal(1);
+                } else if (gameState.currentMission === 2 && distRobot < 4.8) {
+                    promptElem.classList.remove('hidden');
+                    promptText.innerText = "Pressione F para Interrogar a Unidade Flutuante";
+                    if (keys['KeyF']) openMissionModal(2);
+                } else if (gameState.currentMission === 3 && distTeleport < 3.0 && alanGroup.position.y < 5) {
+                    promptElem.classList.remove('hidden');
+                    promptText.innerText = "Pressione F para Usar o Elevador Holográfico";
+                    if (keys['KeyF']) {
+                        alanGroup.position.set(-30, 28.0, -20);
+                        playTone(880, 0.2);
+                        showToast("Você subiu ao topo do prédio!", "success");
+                    }
+                } else if (gameState.currentMission === 3 && distAlanNPC < 5.0) {
+                    promptElem.classList.remove('hidden');
+                    promptText.innerText = "Pressione F para Conversar com Alan Turing (Fase 3)";
+                    if (keys['KeyF']) openMissionModal(3);
+                } else {
+                    promptElem.classList.add('hidden');
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function openMissionModal(missionNum) {
+            gameState.isModalOpen = true;
+            document.getElementById('mission-modal').classList.remove('hidden');
+
+            const title = document.getElementById('mission-title');
+            const badge = document.getElementById('mission-badge');
+            const dialogue = document.getElementById('dialogue-area');
+            const telemetry = document.getElementById('telemetry-panel');
+            const decisionButtons = document.getElementById('decision-buttons');
+
+            if (missionNum === 1) {
+                badge.innerText = "1";
+                title.innerText = "Fase 1: Teste de Turing Holográfico";
+                telemetry.classList.remove('hidden');
+                decisionButtons.classList.remove('hidden');
+                dialogue.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-bold text-xs shrink-0">A</div>
+                        <div class="bg-slate-800/90 p-3 rounded-xl text-xs text-slate-100 flex-1"><span class="font-bold text-cyan-300 block mb-1">Sujeito Alpha:</span>"A poesia é uma permutação linguística estruturada com densidade de vocabulário ideal."</div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-fuchsia-500/20 text-fuchsia-300 flex items-center justify-center font-bold text-xs shrink-0">B</div>
+                        <div class="bg-slate-800/90 p-3 rounded-xl text-xs text-slate-100 flex-1"><span class="font-bold text-fuchsia-300 block mb-1">Sujeito Beta:</span>"Para mim, poesia é quando sinto arrepios ouvindo uma música antiga à noite."</div>
+                    </div>
+                `;
+            } else if (missionNum === 2) {
+                badge.innerText = "2";
+                title.innerText = "Fase 2: Unidade Robótica Flutuante Melhorada";
+                telemetry.classList.remove('hidden');
+                decisionButtons.classList.remove('hidden');
+                dialogue.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-bold text-xs shrink-0">A</div>
+                        <div class="bg-slate-800/90 p-3 rounded-xl text-xs text-slate-100 flex-1"><span class="font-bold text-cyan-300 block mb-1">Robô Avançado Alpha:</span>"Meus processadores calculam a resposta ideal em 0.0001s. Não sinto emoções humanas."</div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-fuchsia-500/20 text-fuchsia-300 flex items-center justify-center font-bold text-xs shrink-0">B</div>
+                        <div class="bg-slate-800/90 p-3 rounded-xl text-xs text-slate-100 flex-1"><span class="font-bold text-fuchsia-300 block mb-1">Humano Beta:</span>"Fiquei impressionado com as luzes néon verdes e vermelhas da cidade enquanto vinha pra cá!"</div>
+                    </div>
+                `;
+            } else {
+                badge.innerText = "3";
+                title.innerText = "Fase 3: Encontro com Alan Turing no Prédio";
+                telemetry.classList.add('hidden');
+                decisionButtons.classList.add('hidden');
+                dialogue.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-6 text-center gap-3">
+                        <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/40">
+                            <i class="fa-solid fa-user-astronaut text-white text-3xl"></i>
+                        </div>
+                        <h4 class="font-bold text-lg text-sky-300">"Parabéns, Investigador!"</h4>
+                        <p class="text-xs text-slate-300">Você acessou o topo do prédio e encontrou o Alan Turing original em seu jaleco clássico!</p>
+                        <p class="text-xs text-emerald-400 font-bold font-mono">Pontuação Total Concluída: ${gameState.score} Pts</p>
+                    </div>
+                `;
+            }
+        }
+
+        function closeMissionModal() {
+            gameState.isModalOpen = false;
+            document.getElementById('mission-modal').classList.add('hidden');
+        }
+
+        function resolveMission(isAlphaAI) {
+            playTone(650, 0.15);
+            if (isAlphaAI) {
+                gameState.score += 500;
+                showToast("Análise Perfeita! Você identificou a IA com sucesso.", "success");
+            } else {
+                gameState.score += 150;
+                showToast("Conclusão registrada com ressalvas.", "info");
+            }
+
+            document.getElementById('hud-score').innerText = `${gameState.score} pts`;
+            closeMissionModal();
+
+            if (gameState.currentMission === 1) {
+                gameState.currentMission = 2;
+                document.getElementById('hud-mission').innerText = "Fase 2: Interrogar Robô Flutuante";
+                document.getElementById('objective-desc').innerText = "Siga as trilhas até o Robô Flutuante na cidade.";
+            } else if (gameState.currentMission === 2) {
+                gameState.currentMission = 3;
+                document.getElementById('hud-mission').innerText = "Fase 3: Subir ao Prédio e Encontrar Alan Turing";
+                document.getElementById('objective-desc').innerText = "Siga as setas até o Elevador Holográfico e suba até o topo do prédio para encontrar Alan Turing!";
+            }
+        }
+
+        function showToast(message, type = "info") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+            toastMsg.innerText = message;
+            toastIcon.className = type === "success" ? "fa-solid fa-circle-check text-emerald-400" : "fa-solid fa-circle-info text-cyan-300";
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => { toast.classList.add('opacity-0', 'pointer-events-none'); }, 3500);
+        }
+
+        // Initialize Window & Event Handlers
+        window.onload = function() {
+            initThree();
+
+            document.getElementById('btn-start-game').addEventListener('click', () => {
+                const name = document.getElementById('input-player-name').value.trim();
+                if (name) gameState.playerName = name;
+                document.getElementById('hud-username').innerText = gameState.playerName;
+                document.getElementById('modal-welcome').classList.add('hidden');
+                gameState.gameStarted = true;
+                playTone(440, 0.2);
+            });
+
+            document.getElementById('btn-close-modal').addEventListener('click', closeMissionModal);
+            document.getElementById('btn-choose-alpha').addEventListener('click', () => resolveMission(true));
+            document.getElementById('btn-choose-beta').addEventListener('click', () => resolveMission(false));
+
+            document.getElementById('btn-sound').addEventListener('click', () => {
+                gameState.soundEnabled = !gameState.soundEnabled;
+                showToast(gameState.soundEnabled ? "Sons Ativados" : "Sons Desativados");
+            });
+
+            document.getElementById('btn-restart').addEventListener('click', () => window.location.reload());
+
+            animate();
+        };
+    </script>
+</body>
+</html>
